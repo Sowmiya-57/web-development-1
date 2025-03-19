@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Video Upload</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .error {
+            color: #ff0000;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .success {
+            color: #4CAF50;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .hide {
+            display: none;
+        }
+        
+        .otp-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        #otpInput {
+            flex: 1;
+        }
+        
+        progress {
+            width: 100%;
+            height: 20px;
+            margin-top: 10px;
+        }
+        
+        #timer {
+            color: #777;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        #videoPreview {
+            width: 100%;
+            margin-top: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Question Video</h1>
+        
+        <!-- Step 1: Email Authentication -->
+        <div id="emailStep">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+                <div id="emailError" class="error hide"></div>
+            </div>
+            <button id="sendOtpBtn">Send OTP</button>
+        </div>
+        
+        <!-- Step 2: OTP Verification -->
+        <div id="otpStep" class="hide">
+            <div class="form-group">
+                <label for="otpInput">Enter OTP sent to your email</label>
+                <div class="otp-container">
+                    <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6">
+                </div>
+                <div id="otpError" class="error hide"></div>
+                <div id="timer"></div>
+            </div>
+            <button id="verifyOtpBtn">Verify OTP</button>
+            <button id="resendOtpBtn" class="hide" style="margin-top: 10px; background-color: #777;">Resend OTP</button>
+        </div>
+        
+        <!-- Step 3: Video Upload -->
+        <div id="uploadStep" class="hide">
+            <div class="form-group">
+                <label for="questionTitle">Question Title</label>
+                <input type="text" id="questionTitle" placeholder="Enter your question title" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="questionDesc">Question Description</label>
+                <textarea id="questionDesc" rows="3" placeholder="Provide more details about your question"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="videoUpload">Upload Video (Max: 2 minutes, 50MB)</label>
+                <input type="file" id="videoUpload" accept="video/*">
+                <div id="videoError" class="error hide"></div>
+                <progress id="uploadProgress" value="0" max="100" class="hide"></progress>
+            </div>
+            
+            <video id="videoPreview" controls></video>
+            
+            <button id="submitBtn">Submit Question</button>
+        </div>
+        
+        <!-- Success Message -->
+        <div id="successStep" class="hide">
+            <div class="success" style="text-align: center; margin: 20px 0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <h2 style="margin-top: 10px; color: #4CAF50;">Question Submitted Successfully!</h2>
+                <p style="margin-top: 10px;">Your video question has been uploaded.</p>
+            </div>
+            <button id="newQuestionBtn">Ask Another Question</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const emailStep = document.getElementById('emailStep');
+        const otpStep = document.getElementById('otpStep');
+        const uploadStep = document.getElementById('uploadStep');
+        const successStep = document.getElementById('successStep');
+        
+        const emailInput = document.getElementById('email');
+        const otpInput = document.getElementById('otpInput');
+        const videoUpload = document.getElementById('videoUpload');
+        const videoPreview = document.getElementById('videoPreview');
+        const questionTitle = document.getElementById('questionTitle');
+        const questionDesc = document.getElementById('questionDesc');
+        
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+        const resendOtpBtn = document.getElementById('resendOtpBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const newQuestionBtn = document.getElementById('newQuestionBtn');
+        
+        const emailError = document.getElementById('emailError');
+        const otpError = document.getElementById('otpError');
+        const videoError = document.getElementById('videoError');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const timerElement = document.getElementById('timer');
+        
+        // Variables
+        let generatedOTP = '';
+        let otpTimer;
+        let timeLeft = 180; // 3 minutes for OTP expiry
+        
+        // Check if current time is within allowed upload hours (2PM - 7PM)
+        function isWithinUploadHours() {
+            const now = new Date();
+            const hours = now.getHours();
+            return hours >= 14 && hours < 19; // 14:00 - 18:59
+        }
+        
+        // Email validation
+        function validateEmail(email) {
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return regex.test(email);
+        }
+        
+        // Generate a random 6-digit OTP
+        function generateOTP() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+        
+        // Start OTP timer
+        function startOTPTimer() {
+            clearInterval(otpTimer);
+            timeLeft = 180;
+            updateTimerDisplay();
+            
+            otpTimer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(otpTimer);
+                    otpError.textContent = "OTP expired. Please request a new one.";
+                    otpError.classList.remove('hide');
+                    verifyOtpBtn.disabled = true;
+                    resendOtpBtn.classList.remove('hide');
+                }
+            }, 1000);
+        }
+        
+        // Update timer display
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `OTP expires in: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        // Send OTP (simulated)
+        function sendOTP() {
+            if (!validateEmail(emailInput.value)) {
+                emailError.textContent = "Please enter a valid email address";
+                emailError.classList.remove('hide');
+                return;
+            }
+            
+            emailError.classList.add('hide');
+            generatedOTP = generateOTP();
+            
+            // In a real implementation, you would send this OTP to the user's email
+            console.log(`OTP sent to ${emailInput.value}: ${generatedOTP}`);
+            
+            // For demo purposes, alert the OTP (in production, this would be sent via email)
+            alert(`For demo purposes, your OTP is: ${generatedOTP}`);
+            
+            // Switch to OTP verification step
+            emailStep.classList.add('hide');
+            otpStep.classList.remove('hide');
+            
+            // Start the OTP timer
+            startOTPTimer();
+        }
+        
+        // Verify OTP
+        function verifyOTP() {
+            if (otpInput.value === generatedOTP) {
+                // Check if current time is within allowed upload hours
+                if (!isWithinUploadHours()) {
+                    otpError.textContent = "Video uploads are only allowed between 2:00 PM and 7:00 PM";
+                    otpError.classList.remove('hide');
+                    return;
+                }
+                
+                otpError.classList.add('hide');
+                otpStep.classList.add('hide');
+                uploadStep.classList.remove('hide');
+                
+                // Clear the timer
+                clearInterval(otpTimer);
+            } else {
+                otpError.textContent = "Invalid OTP. Please try again.";
+                otpError.classList.remove('hide');
+            }
+        }
+        
+        // Reset form for a new question
+        function resetForm() {
+            // Reset all form fields
+            emailInput.value = '';
+            otpInput.value = '';
+            questionTitle.value = '';
+            questionDesc.value = '';
+            videoUpload.value = '';
+            videoPreview.src = '';
+            videoPreview.style.display = 'none';
+            
+            // Reset error messages
+            emailError.classList.add('hide');
+            otpError.classList.add('hide');
+            videoError.classList.add('hide');
+            
+            // Reset progress bar
+            uploadProgress.value = 0;
+            uploadProgress.classList.add('hide');
+            
+            // Show first step
+            successStep.classList.add('hide');
+            emailStep.classList.remove('hide');
+        }
+        
+        // Validate video file
+        function validateVideo(file) {
+            // Check file size (50MB = 50 * 1024 * 1024 bytes)
+            if (file.size > 50 * 1024 * 1024) {
+                return "Video size exceeds the maximum limit of 50MB";
+            }
+            
+            // Create video element to check duration
+            const videoElement = document.createElement('video');
+            videoElement.preload = 'metadata';
+            
+            return new Promise((resolve, reject) => {
+                videoElement.onloadedmetadata = () => {
+                    window.URL.revokeObjectURL(videoElement.src);
+                    
+                    // Check duration (2 minutes = 120 seconds)
+                    if (videoElement.duration > 120) {
+                        resolve("Video duration exceeds the maximum limit of 2 minutes");
+                    } else {
+                        resolve(null); // No error
+                    }
+                };
+                
+                videoElement.onerror = () => {
+                    resolve("Invalid video file");
+                };
+                
+                videoElement.src = URL.createObjectURL(file);
+            });
+        }
+        
+        // Event listeners
+        sendOtpBtn.addEventListener('click', sendOTP);
+        
+        verifyOtpBtn.addEventListener('click', verifyOTP);
+        
+        resendOtpBtn.addEventListener('click', () => {
+            sendOTP();
+            resendOtpBtn.classList.add('hide');
+        });
+        
+        videoUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            videoError.classList.add('hide');
+            
+            // Validate video file
+            const errorMessage = await validateVideo(file);
+            if (errorMessage) {
+                videoError.textContent = errorMessage;
+                videoError.classList.remove('hide');
+                videoUpload.value = '';
+                return;
+            }
+            
+            // Show video preview
+            videoPreview.src = URL.createObjectURL(file);
+            videoPreview.style.display = 'block';
+        });
+        
+        submitBtn.addEventListener('click', () => {
+            // Validate form
+            if (!questionTitle.value.trim()) {
+                videoError.textContent = "Please enter a question title";
+                videoError.classList.remove('hide');
+                return;
+            }
+            
+            if (!videoUpload.files[0]) {
+                videoError.textContent = "Please upload a video";
+                videoError.classList.remove('hide');
+                return;
+            }
+            
+            // Check if current time is still within allowed upload hours
+            if (!isWithinUploadHours()) {
+                videoError.textContent = "Video uploads are only allowed between 2:00 PM and 7:00 PM";
+                videoError.classList.remove('hide');
+                return;
+            }
+            
+            // Simulate upload
+            videoError.classList.add('hide');
+            uploadProgress.classList.remove('hide');
+            submitBtn.disabled = true;
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                uploadProgress.value = progress;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    uploadStep.classList.add('hide');
+                    successStep.classList.remove('hide');
+                }
+            }, 100);
+        });
+        
+        newQuestionBtn.addEventListener('click', resetForm);
+        
+        // Initial check for upload hours
+        window.addEventListener('load', () => {
+            if (!isWithinUploadHours()) {
+                console.log("Note: Video uploads are only allowed between 2:00 PM and 7:00 PM");
+            }
+        });
+    </script>
+</body>
+</html>
